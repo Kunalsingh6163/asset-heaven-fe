@@ -55,6 +55,20 @@ export type VerifyOtpPayload = {
   otp: string;
 };
 
+export type ForgotPasswordPayload = {
+  email: string;
+};
+
+export type VerifyPasswordOtpPayload = {
+  email: string;
+  otp: string;
+};
+
+export type ResetPasswordPayload = {
+  email: string;
+  newPassword: string;
+};
+
 export type MarketQuote = {
   id?: string;
   symbol?: string;

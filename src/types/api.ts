@@ -106,12 +106,23 @@ export type MarketHome = {
 };
 
 export type MarketNews = {
+  uuid?: string;
   title?: string;
   publisher?: string;
   link?: string;
+  publishedAt?: string;
   providerPublishTime?: string | number;
   summary?: string;
-  thumbnail?: string;
+  thumbnail?:
+    | string
+    | {
+        url?: string;
+        width?: number;
+        height?: number;
+        tag?: string;
+      }
+    | null;
+  relatedTickers?: string[];
   [key: string]: unknown;
 };
 

@@ -44,6 +44,11 @@ const navItems = [
   { label: "Expenses", href: "/dashboard/expenses", icon: "/icons/Expenses.png" },
   { label: "Portfolio", href: "/dashboard/portfolio", icon: "/icons/portfolio-new.png" },
   {
+    label: "News",
+    href: "/dashboard/news",
+    icon: "/icons/repo%20rate%20rbi.png",
+  },
+  {
     label: "User Settings",
     href: "/dashboard/settings",
     icon: "/icons/user%20account.png",

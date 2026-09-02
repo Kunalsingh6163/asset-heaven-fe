@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { StatCard } from "@/src/components/dashboard/StatCard";
 import { useExpenses } from "@/src/hooks/useExpenses";
 import { formatCurrency, formatNumber, formatPercent } from "@/src/lib/format";
@@ -128,7 +128,7 @@ export function ExpensesPage() {
                 type="submit"
                 variant="contained"
                 disabled={saving}
-                endIcon={<AddRoundedIcon />}
+                endIcon={<AssetIcon src="/icons/expense_no_bg.png" size={22} />}
               >
                 {saving ? "Adding..." : "Add expense"}
               </Button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Container, Paper, Stack, Typography } from "@mui/material";
-import ShowChartRoundedIcon from "@mui/icons-material/ShowChartRounded";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 
 export function AuthShell({
   title,
@@ -43,9 +43,9 @@ export function AuthShell({
                 display: "grid",
                 placeItems: "center",
                 boxShadow: "0 18px 35px rgba(25, 118, 210, 0.25)",
-              }}
-            >
-              <ShowChartRoundedIcon fontSize="large" />
+            }}
+          >
+              <AssetIcon src="/icons/trade%20smarter.png" size={42} />
             </Box>
             <Stack spacing={1.5}>
               <Typography variant="h2" sx={{ fontSize: { xs: 38, md: 54 } }}>

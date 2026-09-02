@@ -8,8 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import TrendingDownRoundedIcon from "@mui/icons-material/TrendingDownRounded";
-import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import type { MarketQuote } from "@/src/types/api";
 import { formatCurrency, formatPercent, toNumber } from "@/src/lib/format";
 
@@ -99,11 +98,14 @@ export function MarketSection({
                     size="small"
                     color={positive ? "primary" : "secondary"}
                     icon={
-                      positive ? (
-                        <TrendingUpRoundedIcon />
-                      ) : (
-                        <TrendingDownRoundedIcon />
-                      )
+                      <AssetIcon
+                        src={
+                          positive
+                            ? "/icons/top%20gainers.png"
+                            : "/icons/top%20losers.png"
+                        }
+                        size={18}
+                      />
                     }
                     label={formatPercent(change)}
                     sx={{ fontWeight: 800 }}

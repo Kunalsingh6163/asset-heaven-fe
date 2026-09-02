@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { apiRequest } from "@/src/lib/apiClient";
 import type { StockHolding } from "@/src/types/api";
 
@@ -124,7 +124,7 @@ export function AddStockForm({ onCreated }: { onCreated: () => void }) {
           type="submit"
           variant="contained"
           disabled={loading}
-          endIcon={<AddRoundedIcon />}
+          endIcon={<AssetIcon src="/icons/Stocks.png" size={22} />}
         >
           {loading ? "Adding..." : "Add transaction"}
         </Button>

@@ -22,39 +22,31 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
-import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import FacebookRoundedIcon from "@mui/icons-material/FacebookRounded";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
-import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
-import MonetizationOnRoundedIcon from "@mui/icons-material/MonetizationOnRounded";
-import PaidRoundedIcon from "@mui/icons-material/PaidRounded";
-import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
-import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
-import ShowChartRoundedIcon from "@mui/icons-material/ShowChartRounded";
 import YouTubeIcon from "@mui/icons-material/YouTube";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useRequireAuth } from "@/src/hooks/useRequireAuth";
 
 const drawerWidth = 280;
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: DashboardRoundedIcon },
-  { label: "Stocks", href: "/dashboard/stocks", icon: ShowChartRoundedIcon },
+  { label: "Dashboard", href: "/dashboard", icon: "/icons/Explore.png" },
+  { label: "Stocks", href: "/dashboard/stocks", icon: "/icons/Stocks.png" },
   {
     label: "Mutual Funds",
     href: "/dashboard/mutual-funds",
-    icon: AccountBalanceWalletRoundedIcon,
+    icon: "/icons/Mutual%20Funds.png",
   },
-  { label: "Expenses", href: "/dashboard/expenses", icon: PaidRoundedIcon },
-  { label: "Portfolio", href: "/dashboard/portfolio", icon: PieChartRoundedIcon },
+  { label: "Expenses", href: "/dashboard/expenses", icon: "/icons/Expenses.png" },
+  { label: "Portfolio", href: "/dashboard/portfolio", icon: "/icons/portfolio-new.png" },
   {
     label: "User Settings",
     href: "/dashboard/settings",
-    icon: SettingsRoundedIcon,
+    icon: "/icons/user%20account.png",
   },
 ];
 
@@ -107,11 +99,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           sx={{
             width: 52,
             height: 52,
-            bgcolor: "primary.main",
+            bgcolor: "primary.light",
             boxShadow: "0 14px 28px rgba(25, 118, 210, 0.22)",
           }}
         >
-          <MonetizationOnRoundedIcon />
+          <AssetIcon src="/icons/Cash.png" size={34} />
         </Avatar>
         <Box>
           <Typography variant="h6">Asset Heaven</Typography>
@@ -128,7 +120,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           const active =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));
-          const Icon = item.icon;
 
           return (
             <ListItemButton
@@ -148,7 +139,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               }}
             >
               <ListItemIcon sx={{ color: "inherit", minWidth: 42 }}>
-                <Icon />
+                <AssetIcon
+                  src={item.icon}
+                  size={30}
+                  sx={{
+                    opacity: active ? 1 : 0.78,
+                  }}
+                />
               </ListItemIcon>
               <ListItemText
                 primary={item.label}
@@ -192,7 +189,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: "block", lg: "none" },
-          "& .MuiDrawer-paper": { width: drawerWidth, border: 0 },
+          "& .MuiDrawer-paper": {
+            width: drawerWidth,
+            border: 0,
+          },
         }}
       >
         {drawer}
@@ -223,6 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
               <IconButton
                 onClick={() => setMobileOpen(true)}
+                aria-label="Open menu"
                 sx={{ display: { lg: "none" } }}
               >
                 <MenuRoundedIcon />
@@ -264,7 +265,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onClick={() => setMenuAnchor(null)}
                 >
                   <ListItemIcon>
-                    <PersonRoundedIcon fontSize="small" />
+                    <AssetIcon src="/icons/user%20account.png" size={22} />
                   </ListItemIcon>
                   Profile
                 </MenuItem>
@@ -275,7 +276,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   <ListItemIcon>
-                    <LogoutRoundedIcon fontSize="small" />
+                    <AssetIcon
+                      src="/icons/backward.png"
+                      size={22}
+                      sx={{ transform: "rotate(180deg)" }}
+                    />
                   </ListItemIcon>
                   Logout
                 </MenuItem>

@@ -8,12 +8,13 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 
 type SectionCard = {
   title: string;
   description: string;
   action?: string;
+  icon?: string;
 };
 
 export function SectionPage({
@@ -72,11 +73,21 @@ export function SectionPage({
               }}
             >
               <Stack spacing={1}>
+                {card.icon ? <AssetIcon src={card.icon} size={40} /> : null}
                 <Typography variant="h6">{card.title}</Typography>
                 <Typography color="text.secondary">{card.description}</Typography>
               </Stack>
               {card.action ? (
-                <Button endIcon={<ArrowForwardRoundedIcon />} sx={{ alignSelf: "start" }}>
+                <Button
+                  endIcon={
+                    <AssetIcon
+                      src="/icons/backward.png"
+                      size={18}
+                      sx={{ transform: "rotate(180deg)" }}
+                    />
+                  }
+                  sx={{ alignSelf: "start" }}
+                >
                   {card.action}
                 </Button>
               ) : null}

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Alert, Button, Stack, TextField, Typography } from "@mui/material";
-import MarkEmailReadRoundedIcon from "@mui/icons-material/MarkEmailReadRounded";
 import { AuthShell } from "@/src/components/auth/AuthShell";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { useAuth } from "@/src/hooks/useAuth";
 
 function VerifyOtpInner() {
@@ -48,7 +48,7 @@ function VerifyOtpInner() {
           type="submit"
           variant="contained"
           disabled={loading}
-          endIcon={<MarkEmailReadRoundedIcon />}
+          endIcon={<AssetIcon src="/icons/keyboard%20numbers%20(right%20_)%20.png" size={22} />}
         >
           {loading ? "Verifying..." : "Verify OTP"}
         </Button>

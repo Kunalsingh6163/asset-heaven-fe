@@ -11,8 +11,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import LoginRoundedIcon from "@mui/icons-material/LoginRounded";
 import { AuthShell } from "@/src/components/auth/AuthShell";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useAuthStore } from "@/src/store/authStore";
 
@@ -65,7 +65,7 @@ export function LoginForm() {
           type="submit"
           variant="contained"
           disabled={loading}
-          endIcon={<LoginRoundedIcon />}
+          endIcon={<AssetIcon src="/icons/user%20account.png" size={22} />}
         >
           {loading ? "Signing in..." : "Login"}
         </Button>

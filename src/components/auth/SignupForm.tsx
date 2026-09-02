@@ -10,8 +10,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import PersonAddAltRoundedIcon from "@mui/icons-material/PersonAddAltRounded";
 import { AuthShell } from "@/src/components/auth/AuthShell";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { useAuth } from "@/src/hooks/useAuth";
 
 export function SignupForm() {
@@ -82,7 +82,7 @@ export function SignupForm() {
           type="submit"
           variant="contained"
           disabled={loading}
-          endIcon={<PersonAddAltRoundedIcon />}
+          endIcon={<AssetIcon src="/icons/user%20account.png" size={22} />}
         >
           {loading ? "Creating..." : "Signup"}
         </Button>

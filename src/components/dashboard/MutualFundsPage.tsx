@@ -18,7 +18,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { StatCard } from "@/src/components/dashboard/StatCard";
 import { useMutualFunds } from "@/src/hooks/useMutualFunds";
 import { formatCurrency, formatNumber } from "@/src/lib/format";
@@ -144,7 +144,7 @@ export function MutualFundsPage() {
                 type="submit"
                 variant="contained"
                 disabled={saving}
-                endIcon={<AddRoundedIcon />}
+                endIcon={<AssetIcon src="/icons/Mutual%20Funds.png" size={22} />}
               >
                 {saving ? "Adding..." : "Add holding"}
               </Button>

@@ -142,8 +142,34 @@ export type StockHolding = {
   transactionDate?: string;
   sector?: string;
   exchange?: string;
+  currency?: string;
   watchlist?: boolean;
   lastUpdated?: string;
+  [key: string]: unknown;
+};
+
+export type StockSearchResult = {
+  symbol: string;
+  displayName?: string;
+  shortName?: string;
+  longName?: string;
+  name?: string;
+  type?: string;
+  exchange?: string;
+  currency?: string;
+  region?: string;
+  marketState?: string;
+  price?: number;
+  currentPrice?: number;
+  regularMarketPrice?: number;
+  change?: number;
+  changePercent?: number;
+  open?: number;
+  dayHigh?: number;
+  dayLow?: number;
+  previousClose?: number;
+  volume?: number;
+  rank?: number;
   [key: string]: unknown;
 };
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import {
   Avatar,
   Box,
@@ -10,6 +10,10 @@ import {
   CircularProgress,
   Container,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Drawer,
   IconButton,
   List,
@@ -19,6 +23,7 @@ import {
   Menu,
   MenuItem,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -28,10 +33,13 @@ import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import YouTubeIcon from "@mui/icons-material/YouTube";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
+import { CustomSnackbar } from "@/src/components/common/CustomSnackbar";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useRequireAuth } from "@/src/hooks/useRequireAuth";
+import { postJson } from "@/src/lib/apiClient";
 
 const drawerWidth = 280;
+const CHANGE_PASSWORD_PATH = "/auth/change-password";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: "/icons/Explore.png" },
@@ -75,12 +83,73 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const initials = (user?.name || user?.email || "User")
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const passwordsMatch = newPassword === confirmPassword;
+  const passwordFormInvalid =
+    !oldPassword || newPassword.length < 8 || !passwordsMatch;
+
+  const resetPasswordForm = () => {
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
+  const handleChangePasswordSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+
+    if (passwordFormInvalid) return;
+
+    setPasswordLoading(true);
+    try {
+      const response = await postJson<unknown>(CHANGE_PASSWORD_PATH, {
+        oldPassword,
+        newPassword,
+      });
+      const success = response.success === true;
+
+      setSnackbar({
+        open: true,
+        message:
+          response.message ??
+          (success ? "Password changed successfully" : "Unable to change password"),
+        severity: success ? "success" : "error",
+      });
+
+      if (success) {
+        setPasswordDialogOpen(false);
+        resetPasswordForm();
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : "Unable to change password",
+        severity: "error",
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   if (!ready) {
     return (
@@ -277,6 +346,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <MenuItem
                   onClick={() => {
                     setMenuAnchor(null);
+                    setPasswordDialogOpen(true);
+                  }}
+                >
+                  <ListItemIcon>
+                    <AssetIcon src="/icons/change%20password.png" size={22} />
+                  </ListItemIcon>
+                  Change password
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setMenuAnchor(null);
                     void signOut();
                   }}
                 >
@@ -293,6 +373,87 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Stack>
           </Container>
         </Box>
+
+        <Dialog
+          open={passwordDialogOpen}
+          onClose={() => {
+            if (!passwordLoading) setPasswordDialogOpen(false);
+          }}
+          fullWidth
+          maxWidth="xs"
+        >
+          <DialogTitle>Change password</DialogTitle>
+          <Box component="form" onSubmit={handleChangePasswordSubmit}>
+            <DialogContent>
+              <Stack spacing={2.25} sx={{ pt: 1 }}>
+                <TextField
+                  required
+                  autoFocus
+                  autoComplete="current-password"
+                  label="Current password"
+                  type="password"
+                  value={oldPassword}
+                  onChange={(event) => setOldPassword(event.target.value)}
+                />
+                <TextField
+                  required
+                  autoComplete="new-password"
+                  label="New password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  slotProps={{ htmlInput: { minLength: 8 } }}
+                  helperText="Use at least 8 characters."
+                />
+                <TextField
+                  required
+                  autoComplete="new-password"
+                  label="Confirm new password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  error={Boolean(confirmPassword) && !passwordsMatch}
+                  helperText={
+                    Boolean(confirmPassword) && !passwordsMatch
+                      ? "Passwords do not match."
+                      : " "
+                  }
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 3 }}>
+              <Button
+                color="inherit"
+                disabled={passwordLoading}
+                onClick={() => {
+                  setPasswordDialogOpen(false);
+                  resetPasswordForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={passwordLoading || passwordFormInvalid}
+                startIcon={
+                  passwordLoading ? (
+                    <CircularProgress color="inherit" size={18} />
+                  ) : null
+                }
+              >
+                {passwordLoading ? "Changing..." : "Change password"}
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+
+        <CustomSnackbar
+          open={snackbar.open}
+          message={snackbar.message}
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        />
 
         <Box component="main" sx={{ minHeight: "calc(100vh - 210px)" }}>
           {children}

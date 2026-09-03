@@ -12,6 +12,8 @@ import type {
   VerifyOtpPayload,
 } from "@/src/types/api";
 
+const LOGOUT_API_URL = "https://mobulous-tech.vercel.app/api/auth/logout";
+
 export function useAuth() {
   const router = useRouter();
   const { setSession, logout, refreshToken } = useAuthStore();
@@ -102,12 +104,7 @@ export function useAuth() {
 
     if (token) {
       try {
-        await apiRequest<unknown>("/auth/revoke-token", {
-          method: "POST",
-          body: JSON.stringify({ refreshToken: token }),
-          skipAuth: true,
-          retry: false,
-        });
+        await postJson<unknown>(LOGOUT_API_URL, { refreshToken: token }, true);
       } catch {
         // The local session is cleared even if the backend logout call fails.
       }

@@ -1,7 +1,10 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Box,
+  Chip,
   CircularProgress,
   Container,
   Paper,
@@ -16,11 +19,61 @@ import {
 import { AddStockForm } from "@/src/components/dashboard/AddStockForm";
 import { StatCard } from "@/src/components/dashboard/StatCard";
 import { useDashboardData } from "@/src/hooks/useDashboardData";
+import { apiRequest } from "@/src/lib/apiClient";
 import { formatCurrency, formatPercent } from "@/src/lib/format";
+import type { StockHolding } from "@/src/types/api";
+
+type StockListPayload =
+  | StockHolding[]
+  | {
+      stocks?: StockHolding[];
+      data?: StockHolding[];
+      items?: StockHolding[];
+      docs?: StockHolding[];
+    };
+
+const normalizeStocks = (payload?: StockListPayload): StockHolding[] => {
+  if (Array.isArray(payload)) return payload;
+
+  return (
+    payload?.stocks ??
+    payload?.data ??
+    payload?.items ??
+    payload?.docs ??
+    []
+  );
+};
 
 export function StocksPage() {
-  const { stocks, summary, loading, refresh } = useDashboardData();
+  const { summary, refresh: refreshSummary } = useDashboardData();
+  const [stocks, setStocks] = useState<StockHolding[]>([]);
+  const [stocksLoading, setStocksLoading] = useState(true);
+  const [stocksError, setStocksError] = useState<string | null>(null);
   const overall = summary?.overall;
+
+  const loadStocks = useCallback(async () => {
+    setStocksLoading(true);
+    setStocksError(null);
+    try {
+      const response = await apiRequest<StockListPayload>("/stocks");
+      setStocks(normalizeStocks(response.data));
+    } catch (err) {
+      setStocksError(
+        err instanceof Error ? err.message : "Unable to load stock list",
+      );
+    } finally {
+      setStocksLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadStocks);
+  }, [loadStocks]);
+
+  const handleCreated = useCallback(() => {
+    void loadStocks();
+    void refreshSummary();
+  }, [loadStocks, refreshSummary]);
 
   return (
     <Container maxWidth="xl" sx={{ pt: 4 }}>
@@ -51,7 +104,7 @@ export function StocksPage() {
               </Typography>
             </Stack>
           </Paper>
-          <AddStockForm onCreated={() => void refresh()} />
+          <AddStockForm onCreated={handleCreated} />
         </Box>
 
         <Box
@@ -82,13 +135,22 @@ export function StocksPage() {
           }}
         >
           <Stack spacing={2}>
-            <Typography variant="h6">Stock transactions</Typography>
-            {loading ? <CircularProgress /> : null}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1}
+              sx={{ justifyContent: "space-between", alignItems: { sm: "center" } }}
+            >
+              <Typography variant="h6">All stock transactions</Typography>
+              {stocksLoading ? <CircularProgress size={22} /> : null}
+            </Stack>
+            {stocksError ? <Alert severity="warning">{stocksError}</Alert> : null}
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Symbol</TableCell>
                   <TableCell>Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Date</TableCell>
                   <TableCell align="right">Qty</TableCell>
                   <TableCell align="right">Price</TableCell>
                   <TableCell align="right">Value</TableCell>
@@ -96,23 +158,49 @@ export function StocksPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {stocks.map((stock) => (
-                  <TableRow key={stock._id ?? stock.symbol}>
+                {stocks.map((stock, index) => (
+                  <TableRow
+                    key={
+                      stock._id ??
+                      `${stock.symbol}-${stock.transactionDate ?? index}`
+                    }
+                  >
                     <TableCell sx={{ fontWeight: 800 }}>{stock.symbol}</TableCell>
                     <TableCell>{stock.name ?? "-"}</TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={stock.transactionType ?? "-"}
+                        color={
+                          stock.transactionType === "sell"
+                            ? "secondary"
+                            : "primary"
+                        }
+                        variant="outlined"
+                        sx={{ textTransform: "capitalize", fontWeight: 800 }}
+                      />
+                    </TableCell>
+                    <TableCell>{stock.transactionDate ?? "-"}</TableCell>
                     <TableCell align="right">{stock.quantity}</TableCell>
-                    <TableCell align="right">{formatCurrency(stock.price)}</TableCell>
                     <TableCell align="right">
-                      {formatCurrency(stock.currentValue ?? stock.totalValue)}
+                      {formatCurrency(stock.price, stock.currency)}
                     </TableCell>
                     <TableCell align="right">
-                      {formatCurrency(stock.profitLoss)}
+                      {formatCurrency(
+                        stock.currentValue ??
+                          stock.totalValue ??
+                          stock.quantity * Number(stock.currentPrice ?? stock.price),
+                        stock.currency,
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(stock.profitLoss, stock.currency)}
                     </TableCell>
                   </TableRow>
                 ))}
                 {!stocks.length ? (
                   <TableRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={8}>
                       <Typography
                         color="text.secondary"
                         sx={{ py: 2, textAlign: "center" }}

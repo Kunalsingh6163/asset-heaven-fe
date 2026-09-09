@@ -27,19 +27,17 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import FacebookRoundedIcon from "@mui/icons-material/FacebookRounded";
-import InstagramIcon from "@mui/icons-material/Instagram";
-import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
-import YouTubeIcon from "@mui/icons-material/YouTube";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { CustomSnackbar } from "@/src/components/common/CustomSnackbar";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useRequireAuth } from "@/src/hooks/useRequireAuth";
 import { postJson } from "@/src/lib/apiClient";
+import Footer from "@/src/components/footer/Footer";
 
 const drawerWidth = 280;
 const CHANGE_PASSWORD_PATH = "/auth/change-password";
+const APP_LOGO_SRC = "/icons/AssetHeaven%20Logo.svg";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: "/icons/Explore.png" },
@@ -49,8 +47,16 @@ const navItems = [
     href: "/dashboard/mutual-funds",
     icon: "/icons/Mutual%20Funds.png",
   },
-  { label: "Expenses", href: "/dashboard/expenses", icon: "/icons/Expenses.png" },
-  { label: "Portfolio", href: "/dashboard/portfolio", icon: "/icons/portfolio-new.png" },
+  {
+    label: "Expenses",
+    href: "/dashboard/expenses",
+    icon: "/icons/Expenses.png",
+  },
+  {
+    label: "Portfolio",
+    href: "/dashboard/portfolio",
+    icon: "/icons/portfolio-new.png",
+  },
   {
     label: "News",
     href: "/dashboard/news",
@@ -61,20 +67,6 @@ const navItems = [
     href: "/dashboard/settings",
     icon: "/icons/user%20account.png",
   },
-];
-
-const footerLinks = [
-  { label: "About", href: "/dashboard" },
-  { label: "Support", href: "/dashboard/settings" },
-  { label: "Privacy Policy", href: "#" },
-  { label: "Terms", href: "#" },
-];
-
-const socialLinks = [
-  { label: "Facebook", href: "https://facebook.com", icon: FacebookRoundedIcon },
-  { label: "Instagram", href: "https://instagram.com", icon: InstagramIcon },
-  { label: "LinkedIn", href: "https://linkedin.com", icon: LinkedInIcon },
-  { label: "YouTube", href: "https://youtube.com", icon: YouTubeIcon },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -132,7 +124,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         open: true,
         message:
           response.message ??
-          (success ? "Password changed successfully" : "Unable to change password"),
+          (success
+            ? "Password changed successfully"
+            : "Unable to change password"),
         severity: success ? "success" : "error",
       });
 
@@ -143,7 +137,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : "Unable to change password",
+        message:
+          err instanceof Error ? err.message : "Unable to change password",
         severity: "error",
       });
     } finally {
@@ -173,11 +168,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           sx={{
             width: 52,
             height: 52,
-            bgcolor: "primary.light",
+            borderRadius: "14px",
+            bgcolor: "#ffffff",
             boxShadow: "0 14px 28px rgba(25, 118, 210, 0.22)",
           }}
         >
-          <AssetIcon src="/icons/Cash.png" size={34} />
+          <AssetIcon src={APP_LOGO_SRC} alt="Asset Heaven" size={46} />
         </Avatar>
         <Box>
           <Typography variant="h6">Asset Heaven</Typography>
@@ -272,7 +268,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {drawer}
       </Drawer>
 
-      <Box sx={{ pl: { lg: `${drawerWidth}px` }, minHeight: "100vh" }}>
+      <Box
+        sx={{
+          pl: { lg: `${drawerWidth}px` },
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <Box
           component="header"
           sx={{
@@ -320,8 +323,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {user?.name ?? user?.email}
               </Typography>
               <Tooltip title="Account menu">
-                <IconButton onClick={(event) => setMenuAnchor(event.currentTarget)}>
-                  <Avatar src={user?.profilePicture} sx={{ bgcolor: "secondary.main" }}>
+                <IconButton
+                  onClick={(event) => setMenuAnchor(event.currentTarget)}
+                >
+                  <Avatar
+                    src={user?.profilePicture}
+                    sx={{ bgcolor: "secondary.main" }}
+                  >
                     {initials}
                   </Avatar>
                 </IconButton>
@@ -452,64 +460,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           open={snackbar.open}
           message={snackbar.message}
           severity={snackbar.severity}
-          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+          onClose={() =>
+            setSnackbar((current) => ({ ...current, open: false }))
+          }
         />
 
-        <Box component="main" sx={{ minHeight: "calc(100vh - 210px)" }}>
+        <Box component="main" sx={{ flex: 1 }}>
           {children}
         </Box>
 
-        <Box
-          component="footer"
-          sx={{
-            mt: 6,
-            py: 3,
-            borderTop: "1px solid rgba(25, 118, 210, 0.08)",
-            bgcolor: "#ffffff",
-          }}
-        >
-          <Container
-            maxWidth="xl"
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-              {footerLinks.map((link) => (
-                <Button
-                  key={link.label}
-                  component={Link}
-                  href={link.href}
-                  size="small"
-                  color="inherit"
-                >
-                  {link.label}
-                </Button>
-              ))}
-            </Stack>
-            <Stack direction="row" spacing={1}>
-              {socialLinks.map((social, index) => {
-                const Icon = social.icon;
-
-                return (
-                  <IconButton
-                    key={social.label}
-                    aria-label={social.label}
-                    color={index % 2 === 0 ? "primary" : "secondary"}
-                    href={social.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Icon />
-                  </IconButton>
-                );
-              })}
-            </Stack>
-          </Container>
+        <Box sx={{ flexShrink: 0 }}>
+          <Footer />
         </Box>
       </Box>
     </Box>

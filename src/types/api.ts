@@ -148,6 +148,28 @@ export type StockHolding = {
   [key: string]: unknown;
 };
 
+export type StockNetWorthHistoryPoint = {
+  date?: string;
+  timestamp?: string;
+  value?: number;
+  netWorth?: number;
+  totalNetWorth?: number;
+};
+
+export type StockNetWorth = {
+  currency: string;
+  totalNetWorth: number;
+  totalInvestedValue: number;
+  totalProfitLoss: number;
+  totalProfitLossPercentage: number;
+  holdingsCount: number;
+  totalQuantity: number;
+  calculatedAt: string;
+  /** Historical net-worth points returned for a selected period. */
+  history?: StockNetWorthHistoryPoint[];
+  netWorthHistory?: StockNetWorthHistoryPoint[];
+};
+
 export type StockSearchResult = {
   symbol: string;
   displayName?: string;

@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { AddStockForm } from "@/src/components/dashboard/AddStockForm";
 import { StatCard } from "@/src/components/dashboard/StatCard";
+import { StockNetWorthCard } from "@/src/components/dashboard/StockNetWorthCard";
 import { useDashboardData } from "@/src/hooks/useDashboardData";
 import { apiRequest } from "@/src/lib/apiClient";
 import { formatCurrency, formatPercent } from "@/src/lib/format";
@@ -49,6 +50,7 @@ export function StocksPage() {
   const [stocks, setStocks] = useState<StockHolding[]>([]);
   const [stocksLoading, setStocksLoading] = useState(true);
   const [stocksError, setStocksError] = useState<string | null>(null);
+  const [netWorthRefreshKey, setNetWorthRefreshKey] = useState(0);
   const overall = summary?.overall;
 
   const loadStocks = useCallback(async () => {
@@ -73,6 +75,7 @@ export function StocksPage() {
   const handleCreated = useCallback(() => {
     void loadStocks();
     void refreshSummary();
+    setNetWorthRefreshKey((value) => value + 1);
   }, [loadStocks, refreshSummary]);
 
   return (
@@ -125,6 +128,8 @@ export function StocksPage() {
             accent="secondary.main"
           />
         </Box>
+
+        <StockNetWorthCard key={netWorthRefreshKey} />
 
         <Paper
           elevation={0}

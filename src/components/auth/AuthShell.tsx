@@ -3,6 +3,8 @@
 import { Box, Container, Paper, Stack, Typography } from "@mui/material";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
 
+const APP_LOGO_SRC = "/icons/AssetHeaven%20Logo.svg";
+
 export function AuthShell({
   title,
   subtitle,
@@ -37,15 +39,15 @@ export function AuthShell({
               sx={{
                 width: 62,
                 height: 62,
-                borderRadius: "22px",
-                bgcolor: "primary.main",
-                color: "white",
+                borderRadius: "18px",
+                bgcolor: "#ffffff",
                 display: "grid",
                 placeItems: "center",
                 boxShadow: "0 18px 35px rgba(25, 118, 210, 0.25)",
-            }}
-          >
-              <AssetIcon src="/icons/trade%20smarter.png" size={42} />
+                overflow: "hidden",
+              }}
+            >
+              <AssetIcon src={APP_LOGO_SRC} alt="Asset Heaven" size={54} />
             </Box>
             <Stack spacing={1.5}>
               <Typography variant="h2" sx={{ fontSize: { xs: 38, md: 54 } }}>

@@ -14,6 +14,8 @@ import { AuthShell } from "@/src/components/auth/AuthShell";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { useAuth } from "@/src/hooks/useAuth";
 
+const APP_LOGO_SRC = "/icons/AssetHeaven%20Logo.svg";
+
 export function SignupForm() {
   const { signup, loading, error } = useAuth();
   const [form, setForm] = useState({
@@ -82,7 +84,7 @@ export function SignupForm() {
           type="submit"
           variant="contained"
           disabled={loading}
-          endIcon={<AssetIcon src="/icons/user%20account.png" size={22} />}
+          endIcon={<AssetIcon src={APP_LOGO_SRC} size={22} />}
         >
           {loading ? "Creating..." : "Signup"}
         </Button>

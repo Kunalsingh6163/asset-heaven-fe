@@ -89,7 +89,7 @@ export function ProfilePage() {
   );
 
   useEffect(() => {
-    if (!savedUserId || !user) {
+    if (!savedUserId) {
       return;
     }
 
@@ -103,7 +103,7 @@ export function ProfilePage() {
         const response = await apiRequest<unknown>(
           `/users/${encodeURIComponent(savedUserId)}`,
         );
-        const freshUser = extractUser(response, user ?? { email: "" });
+        const freshUser = extractUser(response, { email: "" });
 
         if (!mounted) {
           return;
@@ -137,7 +137,7 @@ export function ProfilePage() {
     return () => {
       mounted = false;
     };
-  }, [editing, savedUserId, setUser, user]);
+  }, [editing, savedUserId, setUser]);
 
   const updateField =
     (field: keyof ProfileForm) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,6 +159,13 @@ export function ProfilePage() {
   };
 
   const saveProfile = async () => {
+    const name = form.name.trim();
+
+    if (name.length < 2) {
+      setError("Enter a name with at least 2 characters");
+      return;
+    }
+
     if (!identity) {
       setError("User identity is not available for update");
       return;
@@ -170,8 +177,7 @@ export function ProfilePage() {
 
     const nextUser: User = {
       ...(currentProfile ?? { email: form.email }),
-      name: form.name.trim() || undefined,
-      email: form.email.trim(),
+      name,
       phone: form.phone.trim() || undefined,
       profilePicture: form.profilePicture.trim() || undefined,
     };
@@ -180,12 +186,11 @@ export function ProfilePage() {
       const response = await apiRequest<unknown>(
         `/users/${encodeURIComponent(identity)}`,
         {
-          method: "PUT",
+          method: "PATCH",
           body: JSON.stringify({
             name: nextUser.name,
-            email: nextUser.email,
-            phone: nextUser.phone,
-            profilePicture: nextUser.profilePicture,
+            phone: form.phone.trim(),
+            profilePicture: form.profilePicture.trim(),
           }),
         },
       );
@@ -294,11 +299,11 @@ export function ProfilePage() {
                 onChange={updateField("name")}
               />
               <TextField
-                required
                 label="Email address"
                 type="email"
                 value={form.email}
-                onChange={updateField("email")}
+                slotProps={{ input: { readOnly: true } }}
+                helperText="Email address cannot be changed from your profile."
               />
               <TextField
                 label="Phone number"

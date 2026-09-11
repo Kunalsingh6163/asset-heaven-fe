@@ -5,6 +5,16 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { cookieStateStorage, deleteCookie } from "@/src/lib/cookieStorage";
 import type { AuthTokens, User } from "@/src/types/api";
 
+const AUTH_STORAGE_KEY = "asset-heaven-auth";
+
+const clearStoredSession = () => {
+  if (typeof window === "undefined") return;
+
+  deleteCookie(AUTH_STORAGE_KEY);
+  window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+};
+
 type AuthState = {
   user: User | null;
   accessToken: string | null;
@@ -47,12 +57,12 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           expiresIn: null,
         });
-        window.setTimeout(() => deleteCookie("asset-heaven-auth"), 0);
+        window.setTimeout(clearStoredSession, 0);
       },
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
-      name: "asset-heaven-auth",
+      name: AUTH_STORAGE_KEY,
       storage: createJSONStorage(() => cookieStateStorage),
       partialize: ({ user, accessToken, refreshToken, expiresIn }) => ({
         user,

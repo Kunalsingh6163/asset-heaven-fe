@@ -97,20 +97,20 @@ export function useAuth() {
 
   const signOut = useCallback(async () => {
     const token = refreshToken;
-    logout();
-    router.replace("/login");
 
-    if (token) {
-      try {
-        await apiRequest<unknown>("/auth/revoke-token", {
+    try {
+      if (token) {
+        await apiRequest<unknown>("/auth/logout", {
           method: "POST",
           body: JSON.stringify({ refreshToken: token }),
-          skipAuth: true,
           retry: false,
         });
-      } catch {
-        // The local session is cleared even if the backend logout call fails.
       }
+    } catch {
+      // Always clear the local session, even when the server session has already expired.
+    } finally {
+      logout();
+      router.replace("/login");
     }
   }, [logout, refreshToken, router]);
 

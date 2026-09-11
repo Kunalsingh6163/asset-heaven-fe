@@ -18,7 +18,7 @@ export function useExpenses() {
     try {
       const [categoriesResponse, expensesResponse, summaryResponse] =
         await Promise.all([
-          apiRequest<string[]>("/expenses/categories", { skipAuth: true }),
+          apiRequest<string[]>("/expenses/categories"),
           apiRequest<Expense[]>("/expenses?page=1&limit=50"),
           apiRequest<ExpenseSummary>("/expenses/summary?budget=50000"),
         ]);

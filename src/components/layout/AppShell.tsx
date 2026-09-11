@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import {
   Avatar,
   Box,
@@ -10,6 +10,10 @@ import {
   CircularProgress,
   Container,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Drawer,
   IconButton,
   List,
@@ -19,19 +23,21 @@ import {
   Menu,
   MenuItem,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import FacebookRoundedIcon from "@mui/icons-material/FacebookRounded";
-import InstagramIcon from "@mui/icons-material/Instagram";
-import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
-import YouTubeIcon from "@mui/icons-material/YouTube";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
+import { CustomSnackbar } from "@/src/components/common/CustomSnackbar";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useRequireAuth } from "@/src/hooks/useRequireAuth";
+import { postJson } from "@/src/lib/apiClient";
+import Footer from "@/src/components/footer/Footer";
 
 const drawerWidth = 280;
+const CHANGE_PASSWORD_PATH = "/auth/change-password";
+const APP_LOGO_SRC = "/icons/AssetHeaven%20Logo.svg";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: "/icons/Explore.png" },
@@ -41,8 +47,16 @@ const navItems = [
     href: "/dashboard/mutual-funds",
     icon: "/icons/Mutual%20Funds.png",
   },
-  { label: "Expenses", href: "/dashboard/expenses", icon: "/icons/Expenses.png" },
-  { label: "Portfolio", href: "/dashboard/portfolio", icon: "/icons/portfolio-new.png" },
+  {
+    label: "Expenses",
+    href: "/dashboard/expenses",
+    icon: "/icons/Expenses.png",
+  },
+  {
+    label: "Portfolio",
+    href: "/dashboard/portfolio",
+    icon: "/icons/portfolio-new.png",
+  },
   {
     label: "News",
     href: "/dashboard/news",
@@ -55,32 +69,82 @@ const navItems = [
   },
 ];
 
-const footerLinks = [
-  { label: "About", href: "/dashboard" },
-  { label: "Support", href: "/dashboard/settings" },
-  { label: "Privacy Policy", href: "#" },
-  { label: "Terms", href: "#" },
-];
-
-const socialLinks = [
-  { label: "Facebook", href: "https://facebook.com", icon: FacebookRoundedIcon },
-  { label: "Instagram", href: "https://instagram.com", icon: InstagramIcon },
-  { label: "LinkedIn", href: "https://linkedin.com", icon: LinkedInIcon },
-  { label: "YouTube", href: "https://youtube.com", icon: YouTubeIcon },
-];
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { ready, user } = useRequireAuth();
   const { signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const initials = (user?.name || user?.email || "User")
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const passwordsMatch = newPassword === confirmPassword;
+  const passwordFormInvalid =
+    !oldPassword || newPassword.length < 8 || !passwordsMatch;
+
+  const resetPasswordForm = () => {
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
+  const handleChangePasswordSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+
+    if (passwordFormInvalid) return;
+
+    setPasswordLoading(true);
+    try {
+      const response = await postJson<unknown>(CHANGE_PASSWORD_PATH, {
+        oldPassword,
+        newPassword,
+      });
+      const success = response.success === true;
+
+      setSnackbar({
+        open: true,
+        message:
+          response.message ??
+          (success
+            ? "Password changed successfully"
+            : "Unable to change password"),
+        severity: success ? "success" : "error",
+      });
+
+      if (success) {
+        setPasswordDialogOpen(false);
+        resetPasswordForm();
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message:
+          err instanceof Error ? err.message : "Unable to change password",
+        severity: "error",
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   if (!ready) {
     return (
@@ -104,11 +168,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           sx={{
             width: 52,
             height: 52,
-            bgcolor: "primary.light",
+            borderRadius: "14px",
+            bgcolor: "#ffffff",
             boxShadow: "0 14px 28px rgba(25, 118, 210, 0.22)",
           }}
         >
-          <AssetIcon src="/icons/Cash.png" size={34} />
+          <AssetIcon src={APP_LOGO_SRC} alt="Asset Heaven" size={46} />
         </Avatar>
         <Box>
           <Typography variant="h6">Asset Heaven</Typography>
@@ -203,7 +268,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {drawer}
       </Drawer>
 
-      <Box sx={{ pl: { lg: `${drawerWidth}px` }, minHeight: "100vh" }}>
+      <Box
+        sx={{
+          pl: { lg: `${drawerWidth}px` },
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <Box
           component="header"
           sx={{
@@ -251,8 +323,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {user?.name ?? user?.email}
               </Typography>
               <Tooltip title="Account menu">
-                <IconButton onClick={(event) => setMenuAnchor(event.currentTarget)}>
-                  <Avatar src={user?.profilePicture} sx={{ bgcolor: "secondary.main" }}>
+                <IconButton
+                  onClick={(event) => setMenuAnchor(event.currentTarget)}
+                >
+                  <Avatar
+                    src={user?.profilePicture}
+                    sx={{ bgcolor: "secondary.main" }}
+                  >
                     {initials}
                   </Avatar>
                 </IconButton>
@@ -277,6 +354,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <MenuItem
                   onClick={() => {
                     setMenuAnchor(null);
+                    setPasswordDialogOpen(true);
+                  }}
+                >
+                  <ListItemIcon>
+                    <AssetIcon src="/icons/change%20password.png" size={22} />
+                  </ListItemIcon>
+                  Change password
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setMenuAnchor(null);
                     void signOut();
                   }}
                 >
@@ -294,61 +382,95 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Container>
         </Box>
 
-        <Box component="main" sx={{ minHeight: "calc(100vh - 210px)" }}>
+        <Dialog
+          open={passwordDialogOpen}
+          onClose={() => {
+            if (!passwordLoading) setPasswordDialogOpen(false);
+          }}
+          fullWidth
+          maxWidth="xs"
+        >
+          <DialogTitle>Change password</DialogTitle>
+          <Box component="form" onSubmit={handleChangePasswordSubmit}>
+            <DialogContent>
+              <Stack spacing={2.25} sx={{ pt: 1 }}>
+                <TextField
+                  required
+                  autoFocus
+                  autoComplete="current-password"
+                  label="Current password"
+                  type="password"
+                  value={oldPassword}
+                  onChange={(event) => setOldPassword(event.target.value)}
+                />
+                <TextField
+                  required
+                  autoComplete="new-password"
+                  label="New password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  slotProps={{ htmlInput: { minLength: 8 } }}
+                  helperText="Use at least 8 characters."
+                />
+                <TextField
+                  required
+                  autoComplete="new-password"
+                  label="Confirm new password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  error={Boolean(confirmPassword) && !passwordsMatch}
+                  helperText={
+                    Boolean(confirmPassword) && !passwordsMatch
+                      ? "Passwords do not match."
+                      : " "
+                  }
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 3 }}>
+              <Button
+                color="inherit"
+                disabled={passwordLoading}
+                onClick={() => {
+                  setPasswordDialogOpen(false);
+                  resetPasswordForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={passwordLoading || passwordFormInvalid}
+                startIcon={
+                  passwordLoading ? (
+                    <CircularProgress color="inherit" size={18} />
+                  ) : null
+                }
+              >
+                {passwordLoading ? "Changing..." : "Change password"}
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+
+        <CustomSnackbar
+          open={snackbar.open}
+          message={snackbar.message}
+          severity={snackbar.severity}
+          onClose={() =>
+            setSnackbar((current) => ({ ...current, open: false }))
+          }
+        />
+
+        <Box component="main" sx={{ flex: 1 }}>
           {children}
         </Box>
 
-        <Box
-          component="footer"
-          sx={{
-            mt: 6,
-            py: 3,
-            borderTop: "1px solid rgba(25, 118, 210, 0.08)",
-            bgcolor: "#ffffff",
-          }}
-        >
-          <Container
-            maxWidth="xl"
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-              {footerLinks.map((link) => (
-                <Button
-                  key={link.label}
-                  component={Link}
-                  href={link.href}
-                  size="small"
-                  color="inherit"
-                >
-                  {link.label}
-                </Button>
-              ))}
-            </Stack>
-            <Stack direction="row" spacing={1}>
-              {socialLinks.map((social, index) => {
-                const Icon = social.icon;
-
-                return (
-                  <IconButton
-                    key={social.label}
-                    aria-label={social.label}
-                    color={index % 2 === 0 ? "primary" : "secondary"}
-                    href={social.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Icon />
-                  </IconButton>
-                );
-              })}
-            </Stack>
-          </Container>
+        <Box sx={{ flexShrink: 0 }}>
+          <Footer />
         </Box>
       </Box>
     </Box>

@@ -23,13 +23,7 @@ import { StatCard } from "@/src/components/dashboard/StatCard";
 import { useDashboardData } from "@/src/hooks/useDashboardData";
 import { formatCurrency, formatPercent } from "@/src/lib/format";
 import { useAuthStore } from "@/src/store/authStore";
-
-const indices = [
-  { name: "NIFTY 50", value: "22,957.10", change: "+145.30 (0.64%)", positive: true },
-  { name: "SENSEX", value: "75,552.89", change: "+512.31 (0.68%)", positive: true },
-  { name: "BANK NIFTY", value: "48,512.35", change: "-120.45 (-0.25%)", positive: false },
-  { name: "NIFTY IT", value: "34,832.40", change: "+256.75 (0.74%)", positive: true },
-];
+import Indices from "./Indices";
 
 const watchlist = [
   ["RELIANCE", "Reliance Industries", "2,987.60", "+1.35%", "Buy"],
@@ -70,10 +64,22 @@ const movers = [
 ];
 
 const news = [
-  ["RBI keeps repo rate unchanged at 6.50%, maintains withdrawal stance", "9:58 AM"],
-  ["Reliance Industries Q4 profit rises on strong retail performance", "9:32 AM"],
-  ["HDFC Bank board approves raising up to Rs 25,000 crore through bonds", "9:10 AM"],
-  ["Indian IT companies see steady deal flow; margins remain under watch", "8:45 AM"],
+  [
+    "RBI keeps repo rate unchanged at 6.50%, maintains withdrawal stance",
+    "9:58 AM",
+  ],
+  [
+    "Reliance Industries Q4 profit rises on strong retail performance",
+    "9:32 AM",
+  ],
+  [
+    "HDFC Bank board approves raising up to Rs 25,000 crore through bonds",
+    "9:10 AM",
+  ],
+  [
+    "Indian IT companies see steady deal flow; margins remain under watch",
+    "8:45 AM",
+  ],
   ["Global markets trade mixed ahead of PMI data; oil prices ease", "8:20 AM"],
 ];
 
@@ -86,6 +92,9 @@ export function DashboardPage() {
     <Box sx={{ pb: 2 }}>
       <Container maxWidth="xl" sx={{ pt: 4 }}>
         <Stack spacing={3}>
+          <Box>
+            <Indices />
+          </Box>
           <Paper
             elevation={0}
             sx={{
@@ -102,7 +111,9 @@ export function DashboardPage() {
               placeholder="Search stocks, ETFs, indices..."
               slotProps={{
                 input: {
-                  startAdornment: <AssetIcon src="/icons/Search%20icon.png" size={22} />,
+                  startAdornment: (
+                    <AssetIcon src="/icons/Search%20icon.png" size={22} />
+                  ),
                 },
               }}
             />
@@ -113,7 +124,10 @@ export function DashboardPage() {
               sx={{ fontWeight: 800 }}
             />
             <Stack spacing={0.25}>
-              <Typography color="text.secondary" sx={{ fontSize: 12, fontWeight: 700 }}>
+              <Typography
+                color="text.secondary"
+                sx={{ fontSize: 12, fontWeight: 700 }}
+              >
                 Available Funds
               </Typography>
               <Typography sx={{ fontWeight: 900 }}>Rs 1,25,430.50</Typography>
@@ -152,49 +166,6 @@ export function DashboardPage() {
           </Box>
 
           {error ? <Alert severity="warning">{error}</Alert> : null}
-
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, minmax(0, 1fr))",
-                xl: "repeat(4, minmax(0, 1fr))",
-              },
-              gap: 2,
-            }}
-          >
-            {indices.map((item) => (
-              <Paper
-                key={item.name}
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  border: "1px solid rgba(25, 118, 210, 0.08)",
-                  overflow: "hidden",
-                }}
-              >
-                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                  <AssetIcon
-                    src={item.positive ? "/icons/top%20gainers.png" : "/icons/top%20losers.png"}
-                    size={42}
-                  />
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 900 }}>{item.name}</Typography>
-                    <Typography variant="h5">{item.value}</Typography>
-                    <Typography
-                      sx={{
-                        color: item.positive ? "primary.main" : "secondary.main",
-                        fontWeight: 800,
-                      }}
-                    >
-                      {item.change}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Paper>
-            ))}
-          </Box>
 
           <Box
             sx={{
@@ -253,7 +224,10 @@ export function DashboardPage() {
                 <Box
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(5, 1fr)" },
+                    gridTemplateColumns: {
+                      xs: "repeat(2, 1fr)",
+                      md: "repeat(5, 1fr)",
+                    },
                     gap: 2,
                   }}
                 >
@@ -288,9 +262,23 @@ export function DashboardPage() {
                     sx={{ width: "100%", height: "100%" }}
                   >
                     <defs>
-                      <linearGradient id="portfolioFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#1976d2" stopOpacity="0.28" />
-                        <stop offset="100%" stopColor="#1976d2" stopOpacity="0" />
+                      <linearGradient
+                        id="portfolioFill"
+                        x1="0"
+                        x2="0"
+                        y1="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#1976d2"
+                          stopOpacity="0.28"
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#1976d2"
+                          stopOpacity="0"
+                        />
                       </linearGradient>
                     </defs>
                     <path
@@ -352,9 +340,19 @@ export function DashboardPage() {
               rows={recentOrders.map(([time, symbol, type, qty, , status]) => [
                 time,
                 symbol,
-                <Chip key={type} size="small" label={type} color={type === "Buy" ? "primary" : "secondary"} />,
+                <Chip
+                  key={type}
+                  size="small"
+                  label={type}
+                  color={type === "Buy" ? "primary" : "secondary"}
+                />,
                 qty,
-                <Chip key={status} size="small" label={status} variant="outlined" />,
+                <Chip
+                  key={status}
+                  size="small"
+                  label={status}
+                  variant="outlined"
+                />,
               ])}
             />
           </Box>
@@ -379,7 +377,12 @@ export function DashboardPage() {
               title="Market News"
               headers={["Headline", "Time"]}
               rows={news.map(([headline, time]) => [
-                <Stack key={headline} direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Stack
+                  key={headline}
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
                   <AssetIcon src="/icons/repo%20rate%20rbi.png" size={22} />
                   <Typography>{headline}</Typography>
                 </Stack>,
@@ -430,7 +433,10 @@ function TradingTable({
       }}
     >
       <Stack spacing={2}>
-        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+        <Stack
+          direction="row"
+          sx={{ alignItems: "center", justifyContent: "space-between" }}
+        >
           <Typography variant="h6">{title}</Typography>
           <Button size="small">View All</Button>
         </Stack>
@@ -446,7 +452,9 @@ function TradingTable({
             {rows.map((row, rowIndex) => (
               <TableRow key={`${title}-${rowIndex}`}>
                 {row.map((cell, cellIndex) => (
-                  <TableCell key={`${title}-${rowIndex}-${cellIndex}`}>{cell}</TableCell>
+                  <TableCell key={`${title}-${rowIndex}-${cellIndex}`}>
+                    {cell}
+                  </TableCell>
                 ))}
               </TableRow>
             ))}
@@ -500,8 +508,19 @@ function AllocationCard() {
                 spacing={1}
                 sx={{ alignItems: "center", justifyContent: "space-between" }}
               >
-                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color }} />
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      bgcolor: color,
+                    }}
+                  />
                   <Typography>{label}</Typography>
                 </Stack>
                 <Typography sx={{ fontWeight: 800 }}>{percent}</Typography>
@@ -514,7 +533,11 @@ function AllocationCard() {
   );
 }
 
-function HoldingsTable({ stocks }: { stocks: ReturnType<typeof useDashboardData>["stocks"] }) {
+function HoldingsTable({
+  stocks,
+}: {
+  stocks: ReturnType<typeof useDashboardData>["stocks"];
+}) {
   return (
     <Paper
       elevation={0}
@@ -543,7 +566,9 @@ function HoldingsTable({ stocks }: { stocks: ReturnType<typeof useDashboardData>
                 <TableCell sx={{ fontWeight: 800 }}>{stock.symbol}</TableCell>
                 <TableCell>{stock.name ?? "-"}</TableCell>
                 <TableCell align="right">{stock.quantity}</TableCell>
-                <TableCell align="right">{formatCurrency(stock.price)}</TableCell>
+                <TableCell align="right">
+                  {formatCurrency(stock.price)}
+                </TableCell>
                 <TableCell align="right">
                   {formatCurrency(stock.currentValue ?? stock.totalValue)}
                 </TableCell>
@@ -565,7 +590,10 @@ function HoldingsTable({ stocks }: { stocks: ReturnType<typeof useDashboardData>
             {!stocks.length ? (
               <TableRow>
                 <TableCell colSpan={6}>
-                  <Typography color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+                  <Typography
+                    color="text.secondary"
+                    sx={{ py: 2, textAlign: "center" }}
+                  >
                     No authenticated holdings returned yet.
                   </Typography>
                 </TableCell>

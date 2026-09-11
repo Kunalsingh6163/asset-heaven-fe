@@ -1,9 +1,5 @@
 import { apiRequest } from "@/src/api/client";
 
-const MARKET_DATA_URL = "https://mobulous-tech.vercel.app/api/market-data";
-const MARKET_DATA_REFRESH_URL =
-  "https://mobulous-tech.vercel.app/api/market-data/refresh";
-
 export type MarketDataItem = {
   key?: string;
   symbol?: string;
@@ -28,7 +24,7 @@ type MarketDataRefreshResponse = {
 };
 
 export const getMarketData = async () => {
-  const response = await apiRequest<MarketDataItem[]>(MARKET_DATA_URL, {
+  const response = await apiRequest<MarketDataItem[]>("/market-data", {
     skipAuth: true,
   });
 
@@ -36,6 +32,6 @@ export const getMarketData = async () => {
 };
 
 export const refreshMarketData = async () =>
-  apiRequest<MarketDataRefreshResponse>(MARKET_DATA_REFRESH_URL, {
+  apiRequest<MarketDataRefreshResponse>("/market-data/refresh", {
     method: "POST",
   });

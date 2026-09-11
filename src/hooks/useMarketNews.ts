@@ -48,7 +48,7 @@ export function useMarketNews() {
     try {
       const responses = await Promise.all(
         newsFeeds.map((feed) =>
-          apiRequest<MarketNews[]>(feed.endpoint, { skipAuth: true }),
+          apiRequest<MarketNews[]>(feed.endpoint),
         ),
       );
       setFeeds({

@@ -17,7 +17,7 @@ import {
 } from "@/src/api/marketData";
 import { formatNumber, toNumber } from "@/src/lib/format";
 
-const MARKET_REFRESH_INTERVAL_MS = 3000;
+const MARKET_REFRESH_INTERVAL_MS = 60_000;
 
 const signedNumber = (value?: number) => {
   const number = Number(value ?? 0);
@@ -101,9 +101,9 @@ function Indices() {
       }
     };
 
-    void loadMarketData(true);
+    void loadMarketData();
     const intervalId = setInterval(() => {
-      void loadMarketData(true);
+      void loadMarketData();
     }, MARKET_REFRESH_INTERVAL_MS);
 
     return () => {

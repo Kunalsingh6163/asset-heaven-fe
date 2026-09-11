@@ -12,8 +12,6 @@ import type {
   VerifyOtpPayload,
 } from "@/src/types/api";
 
-const LOGOUT_API_URL = "https://mobulous-tech.vercel.app/api/auth/logout";
-
 export function useAuth() {
   const router = useRouter();
   const { setSession, logout, refreshToken } = useAuthStore();
@@ -99,15 +97,20 @@ export function useAuth() {
 
   const signOut = useCallback(async () => {
     const token = refreshToken;
-    logout();
-    router.replace("/login");
 
-    if (token) {
-      try {
-        await postJson<unknown>(LOGOUT_API_URL, { refreshToken: token }, true);
-      } catch {
-        // The local session is cleared even if the backend logout call fails.
+    try {
+      if (token) {
+        await apiRequest<unknown>("/auth/logout", {
+          method: "POST",
+          body: JSON.stringify({ refreshToken: token }),
+          retry: false,
+        });
       }
+    } catch {
+      // Always clear the local session, even when the server session has already expired.
+    } finally {
+      logout();
+      router.replace("/login");
     }
   }, [logout, refreshToken, router]);
 

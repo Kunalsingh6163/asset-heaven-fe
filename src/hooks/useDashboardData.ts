@@ -32,7 +32,6 @@ export function useDashboardData() {
       const [homeResponse, stockResponse, summaryResponse] = await Promise.all([
         apiRequest<MarketHome>(
           "/market-data/home?region=IN&count=8&topShareCount=12",
-          { skipAuth: true },
         ),
         apiRequest<StockHolding[]>("/stocks?page=1&limit=6").catch(() => null),
         apiRequest<PortfolioSummaryResponse>("/stocks/summary").catch(

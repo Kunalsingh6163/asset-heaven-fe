@@ -84,7 +84,6 @@ export function AddStockForm({ onCreated }: { onCreated: () => void }) {
       const response = await apiRequest<StockSearchResult[]>("/stocks", {
         method: "GET",
         params: { query: trimmedQuery, region: "IN", limit: 10 },
-        skipAuth: true,
       });
       setResults(response.data ?? []);
     } catch (err) {

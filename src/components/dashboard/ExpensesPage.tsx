@@ -7,6 +7,11 @@ import {
   Button,
   CircularProgress,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   MenuItem,
   Paper,
   Stack,
@@ -18,28 +23,103 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
 import { StatCard } from "@/src/components/dashboard/StatCard";
-import { useExpenses } from "@/src/hooks/useExpenses";
-import { formatCurrency, formatNumber, formatPercent } from "@/src/lib/format";
+import { useExpenses, type ExpenseInput } from "@/src/hooks/useExpenses";
+import { formatCurrency, formatNumber } from "@/src/lib/format";
+import type { Expense } from "@/src/types/api";
 
 const today = new Date().toISOString().slice(0, 10);
-const fallbackCategories = ["food", "shopping", "transport", "bills", "entertainment"];
+
+const toForm = (expense?: Expense | null): ExpenseInput => ({
+  amount: expense?.amount ?? 0,
+  category: expense?.category ?? "",
+  notes: expense?.notes ?? "",
+  expenseDate: expense?.expenseDate
+    ? new Date(expense.expenseDate).toISOString().slice(0, 10)
+    : today,
+});
 
 export function ExpensesPage() {
-  const { expenses, categories, summary, loading, saving, error, addExpense } =
-    useExpenses();
-  const availableCategories = categories.length ? categories : fallbackCategories;
+  const {
+    expenses,
+    categories,
+    summary,
+    loading,
+    saving,
+    error,
+    message,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+  } = useExpenses();
   const [form, setForm] = useState({
     amount: "",
-    category: "food",
+    category: "",
     notes: "",
     expenseDate: today,
   });
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editForm, setEditForm] = useState<ExpenseInput>(toForm());
+  const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
+
+  const selectedCategory = form.category || categories[0] || "";
 
   const updateField =
     (field: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) =>
       setForm((current) => ({ ...current, [field]: event.target.value }));
+
+  const updateEditField =
+    (field: keyof ExpenseInput) =>
+    (event: React.ChangeEvent<HTMLInputElement>) =>
+      setEditForm((current) => ({
+        ...current,
+        [field]:
+          field === "amount" ? Number(event.target.value) : event.target.value,
+      }));
+
+  const submitNewExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const created = await addExpense({
+      amount: Number(form.amount),
+      category: selectedCategory,
+      notes: form.notes.trim() || undefined,
+      expenseDate: form.expenseDate,
+    });
+
+    if (created) {
+      setForm((current) => ({ ...current, amount: "", notes: "" }));
+    }
+  };
+
+  const submitEdit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editingExpense?._id) return;
+
+    const updated = await updateExpense(editingExpense._id, {
+      ...editForm,
+      notes: editForm.notes?.trim() || undefined,
+    });
+
+    if (updated) {
+      setEditingExpense(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget?._id) return;
+
+    const deleted = await deleteExpense(deleteTarget._id);
+    if (deleted) {
+      setDeleteTarget(null);
+    }
+  };
+
+  const topCategory = summary?.categoryBreakdown?.[0];
 
   return (
     <Container maxWidth="xl" sx={{ pt: 4 }}>
@@ -65,8 +145,7 @@ export function ExpensesPage() {
                 Expenses
               </Typography>
               <Typography color="text.secondary" sx={{ maxWidth: 760 }}>
-                Uses `/api/expenses`, `/api/expenses/categories`, and
-                `/api/expenses/summary` exactly as listed in the updated TSV.
+                Add, update, and remove your expense records. Totals and categories come from your authenticated account.
               </Typography>
             </Stack>
           </Paper>
@@ -75,21 +154,8 @@ export function ExpensesPage() {
             elevation={0}
             sx={{ p: 2.5, border: "1px solid rgba(25, 118, 210, 0.08)" }}
           >
-            <Stack
-              component="form"
-              spacing={2}
-              onSubmit={(event) => {
-                event.preventDefault();
-                void addExpense({
-                  amount: Number(form.amount),
-                  category: form.category,
-                  notes: form.notes || undefined,
-                  expenseDate: form.expenseDate,
-                });
-              }}
-            >
+            <Stack component="form" spacing={2} onSubmit={submitNewExpense}>
               <Typography variant="h6">Add expense</Typography>
-              {error ? <Alert severity="error">{error}</Alert> : null}
               <TextField
                 required
                 label="Amount"
@@ -102,10 +168,18 @@ export function ExpensesPage() {
                 select
                 required
                 label="Category"
-                value={form.category}
+                value={selectedCategory}
                 onChange={updateField("category")}
+                disabled={loading || !categories.length}
+                helperText={
+                  loading
+                    ? "Loading categories..."
+                    : !categories.length
+                      ? "Categories are unavailable."
+                      : undefined
+                }
               >
-                {availableCategories.map((category) => (
+                {categories.map((category) => (
                   <MenuItem key={category} value={category}>
                     {category}
                   </MenuItem>
@@ -115,6 +189,7 @@ export function ExpensesPage() {
                 label="Notes"
                 value={form.notes}
                 onChange={updateField("notes")}
+                slotProps={{ htmlInput: { maxLength: 500 } }}
               />
               <TextField
                 required
@@ -127,35 +202,36 @@ export function ExpensesPage() {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={saving}
+                disabled={
+                  saving || loading || !selectedCategory || Number(form.amount) <= 0
+                }
                 endIcon={<AssetIcon src="/icons/expense_no_bg.png" size={22} />}
               >
-                {saving ? "Adding..." : "Add expense"}
+                {saving ? "Saving..." : "Add expense"}
               </Button>
             </Stack>
           </Paper>
         </Box>
 
+        {error ? <Alert severity="error">{error}</Alert> : null}
+        {message ? <Alert severity="success">{message}</Alert> : null}
+
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
+            gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
             gap: 2,
           }}
         >
-          <StatCard label="Budget" value={formatCurrency(summary?.budget)} />
           <StatCard
-            label="Spent"
+            label="Total spent"
             value={formatCurrency(summary?.totalExpenses)}
             accent="secondary.main"
           />
+          <StatCard label="Expense records" value={formatNumber(summary?.expenseCount)} />
           <StatCard
-            label="Remaining"
-            value={formatCurrency(summary?.remainingAmount)}
-          />
-          <StatCard
-            label="Spent percent"
-            value={formatPercent(summary?.spentPercent ?? undefined)}
+            label="Top category"
+            value={topCategory ? topCategory.category : "No expenses yet"}
           />
         </Box>
 
@@ -173,6 +249,7 @@ export function ExpensesPage() {
                   <TableCell>Notes</TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell align="right">Amount</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -186,11 +263,31 @@ export function ExpensesPage() {
                         : "-"}
                     </TableCell>
                     <TableCell align="right">{formatCurrency(expense.amount)}</TableCell>
+                    <TableCell align="right">
+                      <IconButton
+                        aria-label="Edit expense"
+                        disabled={saving || !expense._id}
+                        onClick={() => {
+                          setEditingExpense(expense);
+                          setEditForm(toForm(expense));
+                        }}
+                      >
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        aria-label="Delete expense"
+                        color="error"
+                        disabled={saving || !expense._id}
+                        onClick={() => setDeleteTarget(expense)}
+                      >
+                        <DeleteOutlineRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
                 ))}
-                {!expenses.length ? (
+                {!loading && !expenses.length ? (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Typography color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
                         No expenses found.
                       </Typography>
@@ -199,12 +296,93 @@ export function ExpensesPage() {
                 ) : null}
               </TableBody>
             </Table>
-            <Typography color="text.secondary" sx={{ fontSize: 13 }}>
-              {formatNumber(summary?.expenseCount)} expense records in the current summary.
-            </Typography>
           </Stack>
         </Paper>
       </Stack>
+
+      <Dialog
+        open={Boolean(editingExpense)}
+        onClose={() => !saving && setEditingExpense(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <Box component="form" onSubmit={submitEdit}>
+          <DialogTitle>Edit expense</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <TextField
+                required
+                label="Amount"
+                type="number"
+                value={editForm.amount}
+                onChange={updateEditField("amount")}
+                slotProps={{ htmlInput: { min: 0.01, step: 0.01 } }}
+              />
+              <TextField
+                select
+                required
+                label="Category"
+                value={editForm.category}
+                onChange={updateEditField("category")}
+              >
+                {categories.map((category) => (
+                  <MenuItem key={category} value={category}>
+                    {category}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Notes"
+                value={editForm.notes ?? ""}
+                onChange={updateEditField("notes")}
+                slotProps={{ htmlInput: { maxLength: 500 } }}
+              />
+              <TextField
+                required
+                label="Date"
+                type="date"
+                value={editForm.expenseDate}
+                onChange={updateEditField("expenseDate")}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button disabled={saving} onClick={() => setEditingExpense(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={saving || !editForm.category || editForm.amount <= 0}
+            >
+              {saving ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onClose={() => !saving && setDeleteTarget(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Delete expense?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            This will permanently delete the selected expense record.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button disabled={saving} onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button color="error" variant="contained" disabled={saving} onClick={() => void confirmDelete()}>
+            {saving ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

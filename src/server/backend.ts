@@ -60,6 +60,31 @@ export async function handleBackend(request: NextRequest, segments: string[]) {
   if (!isPublic && !authPaths.has(path) && !resourceRoots.has(segments[0])) return failure("API route is not available", 404);
   if ((isPublic && request.method !== "POST") || (path.startsWith("auth/") && request.method !== (path === "auth/me" ? "GET" : "POST"))) return failure("Method not allowed", 405);
 
+  // News feeds use separate upstreams and must not receive session credentials.
+  if (path === "market-news" || path === "market-news/global") {
+    if (request.method !== "GET") return failure("Method not allowed", 405);
+    const isGlobal = path === "market-news/global";
+    let url: URL;
+    try {
+      url = new URL(isGlobal
+        ? process.env.GLOBAL_NEWS_API_URL || "http://localhost:4500/api/market-news/global"
+        : process.env.INDIAN_NEWS_API_URL || "https://mobulous-tech.vercel.app/api/market-news");
+      if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.hash) throw new Error("Invalid news URL");
+      new URL(request.url).searchParams.forEach((value, key) => url.searchParams.set(key, value));
+    } catch {
+      return failure("The news API URL is not configured correctly.", 503);
+    }
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+        cache: "no-store", redirect: "error", signal: AbortSignal.timeout(25_000),
+      });
+      return json(await response.json(), response.status);
+    } catch {
+      return failure(`Unable to reach the ${isGlobal ? "global" : "Indian"} news server. Please try again.`, 502);
+    }
+  }
+
   let base: string;
   try { base = backendUrl(); } catch { return failure("The server API URL is not configured correctly.", 503); }
   const names = cookieNames(base);

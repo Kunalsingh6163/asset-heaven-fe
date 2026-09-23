@@ -24,7 +24,7 @@ type MarketDataRefreshResponse = {
 };
 
 export const getMarketData = async () => {
-  const response = await apiRequest<MarketDataItem[]>("/market-data", {
+  const response = await apiRequest<MarketDataItem[]>("/indices", {
     skipAuth: true,
   });
 

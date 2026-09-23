@@ -129,7 +129,7 @@ function ArticleLink({ article, compact = false }: { article: MarketNews; compac
 }
 
 export function NewsPage() {
-  const { feeds, loading, error, refresh } = useMarketNews();
+  const { feeds, loading, errors, refresh } = useMarketNews();
   const [selectedFeed, setSelectedFeed] = useState<NewsFeedKey | null>(null);
   const activeFeed = newsFeeds.find((feed) => feed.key === selectedFeed);
 
@@ -141,15 +141,9 @@ export function NewsPage() {
             Market News
           </Typography>
           <Typography color="text.secondary">
-            Follow the latest market coverage, live updates, and related stories.
+            Follow the latest Indian and global market news.
           </Typography>
         </Stack>
-
-        {error ? (
-          <Alert severity="error" action={<Button color="inherit" size="small" onClick={() => void refresh()}>Retry</Button>}>
-            {error}
-          </Alert>
-        ) : null}
 
         {loading ? (
           <Box sx={{ minHeight: 260, display: "grid", placeItems: "center" }}>
@@ -159,7 +153,7 @@ export function NewsPage() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+              gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
               gap: 2,
             }}
           >
@@ -187,7 +181,11 @@ export function NewsPage() {
                   </Stack>
 
                   <Box sx={{ flex: 1 }}>
-                    {leadArticle ? (
+                    {errors[feed.key] ? (
+                      <Alert severity="error" action={<Button color="inherit" size="small" onClick={() => void refresh()}>Retry</Button>}>
+                        {feed.title}: {errors[feed.key]}
+                      </Alert>
+                    ) : leadArticle ? (
                       <ArticleLink article={leadArticle} />
                     ) : (
                       <Typography color="text.secondary">No stories are available right now.</Typography>
@@ -197,6 +195,7 @@ export function NewsPage() {
                   <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
                     <Button
                       size="small"
+                      disabled={!feeds[feed.key].length}
                       onClick={() => setSelectedFeed(feed.key)}
                       endIcon={<OpenInNewRoundedIcon fontSize="small" />}
                     >

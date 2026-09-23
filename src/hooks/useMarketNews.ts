@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/src/lib/apiClient";
 import type { MarketNews } from "@/src/types/api";
 
-export type NewsFeedKey = "latest" | "live" | "related";
+export type NewsFeedKey = "indian" | "global";
 
 export const newsFeeds: Array<{
   key: NewsFeedKey;
@@ -13,59 +13,64 @@ export const newsFeeds: Array<{
   endpoint: string;
 }> = [
   {
-    key: "latest",
-    title: "Market News",
-    description: "Latest market stories and company updates.",
+    key: "indian",
+    title: "Indian News",
+    description: "Latest news from Indian markets and companies.",
     endpoint: "/market-news",
   },
   {
-    key: "live",
-    title: "Live Market Updates",
-    description: "Fresh headlines from the active trading session.",
-    endpoint: "/market-news/live",
-  },
-  {
-    key: "related",
-    title: "Related Stories",
-    description: "More coverage connected to current market themes.",
-    endpoint: "/market-news/related",
+    key: "global",
+    title: "Global News",
+    description: "Market headlines and trading updates from around the world.",
+    endpoint: "/market-news/global",
   },
 ];
 
 type NewsState = Record<NewsFeedKey, MarketNews[]>;
 
-const emptyNewsState: NewsState = { latest: [], live: [], related: [] };
+const emptyNewsState: NewsState = { indian: [], global: [] };
+type NewsErrors = Partial<Record<NewsFeedKey, string>>;
 
 export function useMarketNews() {
   const [feeds, setFeeds] = useState<NewsState>(emptyNewsState);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<NewsErrors>({});
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setErrors({});
 
-    try {
-      const responses = await Promise.all(
-        newsFeeds.map((feed) =>
-          apiRequest<MarketNews[]>(feed.endpoint),
-        ),
-      );
-      setFeeds({
-        latest: responses[0].data ?? [],
-        live: responses[1].data ?? [],
-        related: responses[2].data ?? [],
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load market news");
-    } finally {
-      setLoading(false);
-    }
+    const responses = await Promise.allSettled(
+      newsFeeds.map(async (feed) => {
+        const response = await apiRequest<MarketNews[]>(feed.endpoint, { skipAuth: true });
+        if (!Array.isArray(response.data)) {
+          throw new Error("The news server returned an invalid article list.");
+        }
+        return response.data;
+      }),
+    );
+    const nextFeeds: NewsState = { ...emptyNewsState };
+    const nextErrors: NewsErrors = {};
+
+    responses.forEach((response, index) => {
+      const { key } = newsFeeds[index];
+      if (response.status === "fulfilled") {
+        nextFeeds[key] = response.value;
+      } else {
+        nextErrors[key] = response.reason instanceof Error
+          ? response.reason.message
+          : "Unable to load market news";
+      }
+    });
+
+    setFeeds(nextFeeds);
+    setErrors(nextErrors);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     void Promise.resolve().then(refresh);
   }, [refresh]);
 
-  return { feeds, loading, error, refresh };
+  return { feeds, loading, errors, refresh };
 }

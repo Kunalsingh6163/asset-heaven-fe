@@ -1,21 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/src/store/authStore";
+import { checkSession } from "@/src/api/auth";
 
 export function useRequireAuth() {
   const router = useRouter();
-  const { accessToken, hasHydrated, user } = useAuthStore();
-
+  const { status, user } = useAuthStore();
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (hasHydrated && !accessToken) {
-      router.replace("/login");
-    }
-  }, [accessToken, hasHydrated, router]);
-
+    let active = true;
+    void checkSession().catch((failure: unknown) => {
+      if (active) setError(failure instanceof Error ? failure.message : "Unable to verify your session.");
+    });
+    return () => { active = false; };
+  }, [attempt]);
+  useEffect(() => {
+    if (status === "anonymous") router.replace("/login");
+  }, [status, router]);
   return {
-    ready: hasHydrated && Boolean(accessToken),
-    user,
+    ready: status === "authenticated", user, error,
+    retry: () => { setError(null); setAttempt((value) => value + 1); },
   };
 }

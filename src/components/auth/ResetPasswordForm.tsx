@@ -6,12 +6,15 @@ import { useSearchParams } from "next/navigation";
 import { Alert, Button, Stack, TextField, Typography } from "@mui/material";
 import { AuthShell } from "@/src/components/auth/AuthShell";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
+import { useRecoveryStore } from "@/src/store/recoveryStore";
 import { usePasswordRecovery } from "@/src/hooks/usePasswordRecovery";
 
 function ResetPasswordInner() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
   const { resetPassword, loading, error } = usePasswordRecovery();
+  const challenge = useRecoveryStore();
+  const [otp, setOtp] = useState(challenge.email === email ? challenge.otp : "");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const passwordsMatch = newPassword === confirmPassword;
@@ -26,12 +29,16 @@ function ResetPasswordInner() {
         spacing={2.5}
         onSubmit={(event) => {
           event.preventDefault();
-          if (passwordsMatch) void resetPassword({ email, newPassword });
+          if (passwordsMatch) void resetPassword({ email, otp, newPassword });
         }}
       >
         {!email ? <Alert severity="warning">Verify your email before resetting the password.</Alert> : null}
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField disabled label="Email address" type="email" value={email} />
+        <TextField required label="Password reset code" autoComplete="one-time-code" value={otp}
+          onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+          slotProps={{ htmlInput: { inputMode: "numeric", pattern: "[0-9]{6}", maxLength: 6 } }}
+          helperText="Enter the six-digit code from your reset email." />
         <TextField
           required
           autoFocus
@@ -58,7 +65,7 @@ function ResetPasswordInner() {
           size="large"
           type="submit"
           variant="contained"
-          disabled={loading || !email || newPassword.length < 8 || !passwordsMatch}
+          disabled={loading || !email || otp.length !== 6 || newPassword.length < 8 || !passwordsMatch}
           endIcon={<AssetIcon src="/icons/change%20password.png" size={22} />}
         >
           {loading ? "Updating password..." : "Update password"}

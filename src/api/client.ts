@@ -1,120 +1,86 @@
 import axios, { type AxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/src/store/authStore";
-import type { ApiEnvelope, AuthTokens } from "@/src/types/api";
+import type { ApiEnvelope } from "@/src/types/api";
 
-const DEFAULT_API_URL = "http://localhost:4500/api";
-
-const normalizeApiBaseUrl = (url?: string) => {
-  const baseUrl = url?.trim().replace(/\/$/, "");
-
-  if (!baseUrl) return DEFAULT_API_URL;
-
-  return baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}/api`;
-};
-
-export const API_BASE_URL = normalizeApiBaseUrl(
-  process.env.NEXT_PUBLIC_API_BASE_URL,
-);
-
+export const API_BASE_URL = "/api/backend";
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", "X-Requested-With": "AssetHeaven" },
+  timeout: 30_000,
+  withCredentials: true,
 });
 
-export type RequestOptions = Omit<
-  AxiosRequestConfig,
-  "baseURL" | "data" | "url"
-> & {
+export type RequestOptions = Omit<AxiosRequestConfig, "baseURL" | "data" | "url"> & {
   body?: BodyInit | null;
   skipAuth?: boolean;
   retry?: boolean;
 };
 
-const errorMessage = (error: unknown) => {
+export class ApiError extends Error {
+  constructor(message: string, public status?: number) { super(message); this.name = "ApiError"; }
+}
+function asError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
   if (axios.isAxiosError<ApiEnvelope<unknown>>(error)) {
     const data = error.response?.data;
-    return data?.message || data?.error || error.message || "Request failed";
+    const details = Array.isArray(data?.details) ? data.details.join(". ") : "";
+    return new ApiError(details || data?.message || data?.error || "Unable to reach the server. Please try again.", error.response?.status);
   }
+  return new ApiError(error instanceof Error ? error.message : "Request failed");
+}
+let refresh: Promise<void> | null = null;
+let refreshGeneration = 0;
+let sessionWork: Promise<unknown> = Promise.resolve();
 
-  return error instanceof Error ? error.message : "Request failed";
-};
-
-const parseBody = (body?: BodyInit | null) => {
-  if (typeof body !== "string") return body;
-
-  try {
-    return JSON.parse(body) as unknown;
-  } catch {
-    return body;
+// Serialize refresh and logout/login within this tab so an old refresh response
+// cannot set cookies after logout or replace a newer login.
+export function serializeSession<T>(operation: () => Promise<T>): Promise<T> {
+  const next = sessionWork.then(operation, operation);
+  sessionWork = next.catch(() => undefined);
+  return next;
+}
+async function refreshSession() {
+  if (!refresh) {
+    const revision = useAuthStore.getState().revision;
+    refresh = serializeSession(async () => {
+      if (useAuthStore.getState().revision !== revision) throw new ApiError("Session changed", 401);
+      try {
+        const response = await apiClient.post<ApiEnvelope<unknown>>("/auth/refresh-token", {});
+        if (!response.data.success) throw new ApiError(response.data.message || "Please sign in again", 401);
+        refreshGeneration++;
+      } catch (error) {
+        const failure = asError(error);
+        if ([400, 401, 403].includes(failure.status ?? 0) && useAuthStore.getState().revision === revision) useAuthStore.getState().logout();
+        throw failure;
+      }
+    }).finally(() => { refresh = null; });
   }
-};
-
-const refreshAccessToken = async () => {
-  const { refreshToken, setTokens, logout } = useAuthStore.getState();
-
-  if (!refreshToken) {
-    logout();
-    return null;
-  }
-
-  try {
-    const response = await apiClient.post<ApiEnvelope<AuthTokens>>(
-      "/auth/refresh-token",
-      { refreshToken },
-    );
-    const tokens = response.data.data;
-
-    if (!tokens?.accessToken) {
-      logout();
-      return null;
-    }
-
-    setTokens(tokens);
-    return tokens.accessToken;
-  } catch {
-    logout();
-    return null;
-  }
-};
-
-export async function apiRequest<T>(
-  path: string,
-  options: RequestOptions = {},
-): Promise<ApiEnvelope<T>> {
-  const { body, headers, skipAuth, retry, ...config } = options;
-  const { accessToken } = useAuthStore.getState();
-
+  return refresh;
+}
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<ApiEnvelope<T>> {
+  const generation = refreshGeneration;
+  const { body, skipAuth, retry, ...config } = options;
+  const revision = useAuthStore.getState().revision;
+  if (!path.startsWith("/") || path.startsWith("//")) throw new ApiError("Invalid API path");
   try {
     const response = await apiClient.request<ApiEnvelope<T>>({
-      ...config,
-      url: path,
-      headers: {
-        ...headers,
-        ...(!skipAuth && accessToken
-          ? { Authorization: `Bearer ${accessToken}` }
-          : {}),
-      },
-      data: parseBody(body),
+      ...config, url: path, data: typeof body === "string" ? JSON.parse(body) : body,
     });
+    if (response.data.success === false) throw new ApiError(response.data.message || "Request failed", response.status);
+    if (!skipAuth && useAuthStore.getState().revision !== revision) throw new ApiError("Session changed", 401);
     return response.data;
   } catch (error) {
-    if (
-      axios.isAxiosError(error) &&
-      error.response?.status === 401 &&
-      retry !== false &&
-      !skipAuth
-    ) {
-      const freshToken = await refreshAccessToken();
-      if (freshToken) return apiRequest<T>(path, { ...options, retry: false });
+    const failure = asError(error);
+    if (failure.status === 401 && !skipAuth && useAuthStore.getState().revision === revision) {
+      if (retry !== false) {
+        if (generation === refreshGeneration) await refreshSession();
+        if (useAuthStore.getState().revision !== revision) throw new ApiError("Please sign in again", 401);
+        return apiRequest<T>(path, { ...options, retry: false });
+      }
+      useAuthStore.getState().logout();
     }
-
-    throw new Error(errorMessage(error));
+    throw failure;
   }
 }
-
 export const postJson = <T>(path: string, body: unknown, skipAuth = false) =>
-  apiRequest<T>(path, {
-    method: "POST",
-    body: JSON.stringify(body),
-    skipAuth,
-  });
+  apiRequest<T>(path, { method: "POST", body: JSON.stringify(body), skipAuth });

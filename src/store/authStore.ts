@@ -1,78 +1,32 @@
 "use client";
 
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { cookieStateStorage, deleteCookie } from "@/src/lib/cookieStorage";
-import type { AuthTokens, User } from "@/src/types/api";
-
-const AUTH_STORAGE_KEY = "asset-heaven-auth";
-
-const clearStoredSession = () => {
-  if (typeof window === "undefined") return;
-
-  deleteCookie(AUTH_STORAGE_KEY);
-  window.localStorage.removeItem(AUTH_STORAGE_KEY);
-  window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
-};
+import type { User } from "@/src/types/api";
 
 type AuthState = {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
-  expiresIn: string | null;
-  hasHydrated: boolean;
-  setSession: (user: User, tokens: AuthTokens) => void;
-  setTokens: (tokens: AuthTokens) => void;
+  status: "unknown" | "authenticated" | "anonymous";
+  revision: number;
+  setSession: (user: User) => void;
   setUser: (user: User | null) => void;
   logout: () => void;
-  setHasHydrated: (value: boolean) => void;
 };
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      expiresIn: null,
-      hasHydrated: false,
-      setSession: (user, tokens) =>
-        set({
-          user,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          expiresIn: tokens.expiresIn ?? null,
-        }),
-      setTokens: (tokens) =>
-        set({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          expiresIn: tokens.expiresIn ?? null,
-        }),
-      setUser: (user) => set({ user }),
-      logout: () => {
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          expiresIn: null,
-        });
-        window.setTimeout(clearStoredSession, 0);
-      },
-      setHasHydrated: (value) => set({ hasHydrated: value }),
-    }),
-    {
-      name: AUTH_STORAGE_KEY,
-      storage: createJSONStorage(() => cookieStateStorage),
-      partialize: ({ user, accessToken, refreshToken, expiresIn }) => ({
-        user,
-        accessToken,
-        refreshToken,
-        expiresIn,
-      }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
-      },
-    },
-  ),
-);
+// JWTs live exclusively in server-set HttpOnly cookies. Reloads validate /auth/me.
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  status: "unknown",
+  revision: 0,
+  setSession: (user) => set((state) => ({ user, status: "authenticated", revision: state.revision + 1 })),
+  setUser: (user) => set({ user }),
+  logout: () => set((state) => ({ user: null, status: "anonymous", revision: state.revision + 1 })),
+}));
+
+export function clearLegacySession() {
+  if (typeof window === "undefined") return;
+  document.cookie = "asset-heaven-auth=; Path=/; Max-Age=0; SameSite=Lax";
+  try {
+    localStorage.removeItem("asset-heaven-auth");
+    sessionStorage.removeItem("asset-heaven-auth");
+  } catch { /* Storage can be disabled by the browser. */ }
+}

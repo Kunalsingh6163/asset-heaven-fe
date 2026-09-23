@@ -12,12 +12,13 @@ import {
 } from "@mui/material";
 import { AuthShell } from "@/src/components/auth/AuthShell";
 import { AssetIcon } from "@/src/components/common/AssetIcon";
+import { GoogleSignIn } from "@/src/components/auth/GoogleSignIn";
 import { useAuth } from "@/src/hooks/useAuth";
 
 const APP_LOGO_SRC = "/icons/AssetHeaven%20Logo.svg";
 
 export function SignupForm() {
-  const { signup, loading, error } = useAuth();
+  const { signup, googleLogin, loading, error } = useAuth();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -32,7 +33,7 @@ export function SignupForm() {
   return (
     <AuthShell
       title="Create account"
-      subtitle="Signup sends an email OTP using the backend verification flow."
+      subtitle="Create your account and verify your email to get started."
     >
       <Stack
         component="form"
@@ -88,6 +89,7 @@ export function SignupForm() {
         >
           {loading ? "Creating..." : "Signup"}
         </Button>
+        <GoogleSignIn onCredential={(token) => { void googleLogin(token); }} disabled={loading} />
         <Divider />
         <Typography color="text.secondary" sx={{ textAlign: "center" }}>
           Already verified?{" "}

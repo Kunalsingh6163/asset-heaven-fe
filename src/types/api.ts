@@ -66,6 +66,7 @@ export type VerifyPasswordOtpPayload = {
 
 export type ResetPasswordPayload = {
   email: string;
+  otp: string;
   newPassword: string;
 };
 

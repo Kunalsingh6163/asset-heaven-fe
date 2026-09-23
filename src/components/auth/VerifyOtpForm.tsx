@@ -17,7 +17,7 @@ function VerifyOtpInner() {
   return (
     <AuthShell
       title="Verify email"
-      subtitle="Enter the OTP sent by the signup endpoint to activate your account."
+      subtitle="Enter the six-digit code sent to your email to activate your account."
     >
       <Stack
         component="form"
@@ -39,7 +39,7 @@ function VerifyOtpInner() {
           required
           label="OTP"
           value={otp}
-          onChange={(event) => setOtp(event.target.value)}
+          onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
           slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 6 } }}
         />
         <Button
@@ -47,7 +47,7 @@ function VerifyOtpInner() {
           size="large"
           type="submit"
           variant="contained"
-          disabled={loading}
+          disabled={loading || otp.length !== 6}
           endIcon={<AssetIcon src="/icons/keyboard%20numbers%20(right%20_)%20.png" size={22} />}
         >
           {loading ? "Verifying..." : "Verify OTP"}

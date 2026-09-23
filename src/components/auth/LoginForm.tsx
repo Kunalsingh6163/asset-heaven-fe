@@ -13,21 +13,27 @@ import {
 } from "@mui/material";
 import { AuthShell } from "@/src/components/auth/AuthShell";
 import { useAuth } from "@/src/hooks/useAuth";
+import { checkSession } from "@/src/api/auth";
+import { GoogleSignIn } from "@/src/components/auth/GoogleSignIn";
 import { useAuthStore } from "@/src/store/authStore";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, loading, error } = useAuth();
-  const { accessToken, hasHydrated } = useAuthStore();
+  const { login, googleLogin, loading, error } = useAuth();
+  const { status } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    if (hasHydrated && accessToken) {
+    void checkSession().catch(() => { /* A signed-out user can use the login form. */ });
+  }, []);
+
+  useEffect(() => {
+    if (status === "authenticated") {
       router.replace("/dashboard");
     }
-  }, [accessToken, hasHydrated, router]);
+  }, [status, router]);
 
   return (
     <AuthShell
@@ -47,7 +53,9 @@ export function LoginForm() {
             Password updated. Sign in with your new password.
           </Alert>
         ) : null}
+        {searchParams.get("verified") === "1" ? <Alert severity="success">Email verified. You can now sign in.</Alert> : null}
         {error ? <Alert severity="error">{error}</Alert> : null}
+        {error?.includes("verify your email") ? <Typography component={Link} href={`/verify-otp?email=${encodeURIComponent(email)}`}>Verify your email</Typography> : null}
         <TextField
           required
           autoComplete="email"
@@ -84,6 +92,7 @@ export function LoginForm() {
         >
           {loading ? "Signing in..." : "Login"}
         </Button>
+        <GoogleSignIn onCredential={(token) => { void googleLogin(token); }} disabled={loading} />
         <Divider />
         <Typography color="text.secondary" sx={{ textAlign: "center" }}>
           New to Asset Heaven?{" "}

@@ -71,7 +71,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { ready, user } = useRequireAuth();
+  const { ready, user, error: sessionError, retry: retrySession } = useRequireAuth();
   const { signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -133,6 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (success) {
         setPasswordDialogOpen(false);
         resetPasswordForm();
+        await signOut();
       }
     } catch (err) {
       setSnackbar({
@@ -149,7 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!ready) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-        <CircularProgress />
+        {sessionError ? <Stack spacing={2}><Typography color="error">{sessionError}</Typography><Button onClick={retrySession}>Retry</Button></Stack> : <CircularProgress />}
       </Box>
     );
   }
@@ -377,6 +378,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </ListItemIcon>
                   Logout
                 </MenuItem>
+                <MenuItem onClick={() => { setMenuAnchor(null); void signOut(true); }}>Sign out of all devices</MenuItem>
               </Menu>
             </Stack>
           </Container>
